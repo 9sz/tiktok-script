@@ -1,0 +1,81 @@
+/*
+  This snippet enables toggling fullscreen videos (F key) and autoplay/next video (A key) in the desktop version of the TikTok website.
+  1. Copy and paste this code into the developer console (Ctrl+Shift+I or Right-Click > Developer Tools / Inspect Element > Console).
+  2. Once pasted hit Enter to execute the snippet then close the console.
+  3. When viewing a feed (For you / Subscriptions / User / Hashtag etc...) click on a video to bring up the side-by-side video/comments view.
+  4. Hit F to hide the comments, switch to fullscreen mode, and maximise the video. Hitting F again, switches back to regular mode.
+  5. Hit A for the next video to be played automatically when playback reaches the end. Hitting A again disables this.
+  
+  Consider using a Js injector plugin to automatically inject the script the next time you load up TikTok in your browser.
+*/
+
+origStyle = {}
+isFullscreen = false;
+autoplay = false;
+observer = new MutationObserver(function (e) {
+	if (autoplay) {
+		stop();
+		play();
+	}
+});
+
+function resetObserver() {
+	observer.disconnect();
+	observer.observe(document.querySelector('video').parentElement.parentElement.parentElement, { subtree: true, childList: true });
+}
+
+function fullscreen() {
+	origStyle.padding = document.querySelector('video').parentElement.parentElement.parentElement.parentElement.style.padding;
+	document.querySelector('video').parentElement.parentElement.parentElement.parentElement.style.padding = 0;
+	origStyle.width = document.querySelector('video').parentElement.parentElement.parentElement.parentElement.parentElement.children[1].style.width;
+	document.querySelector('video').parentElement.parentElement.parentElement.parentElement.parentElement.children[1].style.width = 0;
+	origStyle.flex = document.querySelector('video').parentElement.parentElement.parentElement.parentElement.parentElement.children[1].style.flex;
+	document.querySelector('video').parentElement.parentElement.parentElement.parentElement.parentElement.children[1].style.flex = 0;
+	document.body.requestFullscreen();
+	resetObserver();
+	isFullscreen = true;
+}
+
+function normal() {
+	document.querySelector('video').parentElement.parentElement.parentElement.parentElement.parentElement.children[1].style.flex = origStyle.flex;
+	document.querySelector('video').parentElement.parentElement.parentElement.parentElement.parentElement.children[1].style.width = origStyle.width;
+	document.querySelector('video').parentElement.parentElement.parentElement.parentElement.style.padding = origStyle.padding;
+	document.exitFullscreen();
+	resetObserver();
+	isFullscreen = false;
+}
+
+function triggerNext(e) {
+	if (e != null)
+		document.querySelector('button[data-e2e="arrow-right"]').click();
+	document.querySelectorAll('video')[0].addEventListener('ended', triggerNext, false);
+}
+
+function toggleFullscreen() {
+	if (isFullscreen)
+		normal();
+	else
+		fullscreen();
+}
+
+function play() {
+	triggerNext(null);
+	autoplay = true;
+}
+
+function stop() {
+	document.querySelectorAll('video')[0].removeEventListener('ended', triggerNext, false);
+	autoplay = false;
+}
+
+function toggleAutoplay() {
+	if (autoplay)
+		stop();
+	else
+		play();
+}
+
+document.addEventListener('keyup', function(e) { if (e.key == 'f') toggleFullscreen();}, false);
+document.addEventListener('keyup', function(e) { if (e.key == 'a') toggleAutoplay();}, false);
+
+resetObserver();
